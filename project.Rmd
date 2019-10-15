@@ -1,0 +1,201 @@
+---
+title: "Agaricus Lepiota Analysis"
+author: "Manikanda Prabhu M & Jerin Stanley Daniel J"
+date: "01/10/2019"
+output: html_document
+---
+
+**Problem**
+
+Mushrooms are used extensively in cooking, in many cuisines (notably Chinese, Korean, European, and Japanese). Separating edible from poisonous species requires meticulous attention to detail; there is no single trait by which all toxic mushrooms can be identified, nor one by which all edible mushrooms can be identified. Many mushroom species produce secondary metabolites that can be toxic, mind-altering,antibiotic, antiviral, or bioluminescent. Although there are only a small number of deadly species, several others can cause particularly severe and unpleasant symptoms. Therefore it is necessary to find whether Mushroom is Edible or Poisonous
+
+The given dataset contains some features of Mushrooms in agaricus-lepiota family such as its shape, colour, odour, habitat, gill_details, population etc., as 22 fields of the dataset with 8124 records. From this given dataset we have to determine whether the Mushroom is edible or poisonous by building a model.
+
+# Contents
+
+* Import the Dataset
+* Clean the Dataset
+* Plots on Dataset
+* Spliting the Dataset
+* Building the Model
+* Accuracy of Model
+
+# Import the Dataset
+
+We can import the dataset and assign the column names for each fields and view the dataset
+
+```{r}
+dataset=read.csv("agaricus-lepiota.data",header = F,col.names=c("poiede","cap_shape","cap_surface","cap_color","bruises","odor","gill_attachment","gill_spacing","gill_size","gill_color","stalk_shape","stalk_root","stalk_surface_above_ring","stalk_surface_below_ring","stalk_color_above_ring","stalk_color_below_ring","veil_type","veil_color","ring_number","ring_type","spore_print_color","population","habitat"))
+head(dataset)
+```
+
+* Lets see the Structure and Summary of the given Dataset 
+```{r}
+str(dataset)
+summary(dataset)
+```
+
+# Clean Dataset
+
+The summary shows there are some missing values in the dataset in the field stack_root we can remove the records which have missing values thus increasing our accuracy in predicting the data.
+
+```{r}
+library(dplyr)
+library(dplyr)
+clean_dataset=dataset %>% filter (dataset$stalk_root!='?') %>% droplevels()
+summary(clean_dataset)
+```
+  
+* To find the correlation between the poiede field and fields to find how dependent is poiede on other fields which can be used for building the model
+
+* We have to convert factor to numeric for finding correlation and significance of model.
+
+* This can be done using a for loop or as follows by individually changing the fields as numeric
+  
+```{r}
+clean_dataset$poiede=as.numeric(factor(clean_dataset$poiede,levels=c('p','e'),labels=c(1,2)))
+```
+
+```{r echo=FALSE}
+clean_dataset$odor=as.numeric(factor(clean_dataset$odor,levels=c('a','c','f','l','m','n','p'),labels=c(1,2,3,4,5,6,7)))
+clean_dataset$cap_shape=as.numeric(factor(clean_dataset$cap_shape,levels=c('b','c','f','k','s','x'),labels=c(1,2,3,4,5,6)))
+clean_dataset$cap_surface=as.numeric(factor(clean_dataset$cap_surface,levels=c('f','g','s','y'),labels=c(1,2,3,4)))
+clean_dataset$cap_color=as.numeric(factor(clean_dataset$cap_color,levels=c('n','g','e','y','w','b'),labels=c(1,2,3,4,5,6)))
+clean_dataset$bruises=as.numeric(factor(clean_dataset$bruises,levels=c('f','t'),labels=c(1,2)))
+clean_dataset$gill_attachment=as.numeric(factor(clean_dataset$gill_attachment,levels=c('a','f'),labels=c(1,2)))
+clean_dataset$gill_spacing=as.numeric(factor(clean_dataset$gill_spacing,levels=c('c','w'),labels=c(1,2)))
+clean_dataset$gill_size=as.numeric(factor(clean_dataset$gill_size,levels=c('b','n'),labels=c(1,2)))
+clean_dataset$gill_color=as.numeric(factor(clean_dataset$gill_color,levels=c("g","h","k","n","p","r","u","w","y"),labels =c(1,2,3,4,5,6,7,8,9)))
+clean_dataset$ring_type=as.numeric(factor(clean_dataset$ring_type,levels=c('e','l','n','p'),labels=c(1,2,3,4)))
+clean_dataset$ring_number=as.numeric(factor(clean_dataset$ring_number,levels=c('n','o','t'),labels=c(1,2,3)))
+clean_dataset$stalk_color_below_ring=as.numeric(factor(clean_dataset$stalk_color_below_ring,levels=c('b','c','g','n','p','w','y'),labels=c(1,2,3,4,5,6,7)))
+clean_dataset$stalk_color_above_ring=as.numeric(factor(clean_dataset$stalk_color_above_ring,levels=c('b','c','g','n','p','w','y'),labels=c(1,2,3,4,5,6,7)))
+clean_dataset$stalk_surface_below_ring=as.numeric(factor(clean_dataset$stalk_surface_below_ring,levels=c('f','k','s','y'),labels=c(1,2,3,4)))
+clean_dataset$stalk_surface_above_ring=as.numeric(factor(clean_dataset$stalk_surface_above_ring,levels=c('f','k','s','y'),labels=c(1,2,3,4)))
+clean_dataset$stalk_root=as.numeric(factor(clean_dataset$stalk_root,levels=c('b','c','e','r'),labels=c(1,2,3,4)))
+clean_dataset$stalk_shape=as.numeric(factor(clean_dataset$stalk_shape,levels=c('e','t'),labels=c(1,2)))
+clean_dataset=clean_dataset[-c(4,17,18,21:23)]
+```
+
+```{r}
+library(ggplot2)
+pairs(clean_dataset[1:13])
+library(ggcorrplot)
+corr=round(cor(clean_dataset),1)
+ggcorrplot(corr,outline.color = "white",lab = T,lab_size =3)
+```
+
+The correlogram plot show the correlation of fields with poiede and the fields with negative correlation can be neglected for modelling
+
+# Plots
+
+* Eventhough having high correlation some fields have less significance for modelling for eg gill_color in the given dataset whereas some fields have good significance for modelling eg odor
+
+* Lets visualize them and see
+
+```{r}
+library(ggplot2)
+ggplot(data=clean_dataset,aes(x=odor,y=poiede,fill=as.factor(poiede)))+geom_col()+
+  ggtitle("Distribution of ediblity over odor")
+
+ggplot(data=clean_dataset,aes(x=gill_color,y=poiede,fill=as.factor(poiede)))+geom_col()+
+  ggtitle("Distribution of ediblity over gill_color")
+```
+
+* It can be shown even good using density plots
+
+```{r}
+ggplot(data = clean_dataset,aes(fill=as.factor(poiede),x=gill_color))+geom_density(alpha=0.4)
+
+ggplot(data = clean_dataset,aes(fill=as.factor(poiede),x=odor))+geom_density(alpha=0.4)
+```
+
+* The overlapping region is small in odor and high in gill_color which makes it as negligible for building the model
+
+# Splitting the Dataset
+
+* The cleaned dataset has `r NROW(clean_dataset)` records.
+* This is a large data therefore we split it up as training and testing sets thus we can build the model using training set and predict the result on testing set
+
+```{r}
+set.seed(123)
+library(caTools)
+split=sample.split(clean_dataset$poiede,SplitRatio = 0.75)
+training_set<-subset(clean_dataset,split==T)
+testing_set<-subset(clean_dataset,split==F)
+dim(training_set)
+dim(testing_set)
+```
+
+# Building Model Using Logistic regression
+
+```{r}
+class(training_set$poiede)
+training_set$poiede=as.factor(training_set$poiede)
+
+#Buliding model using generalized linear model
+classifiers=glm(formula=poiede~odor+bruises+stalk_color_above_ring+
+                  stalk_surface_above_ring+stalk_surface_below_ring+
+                  stalk_shape+stalk_root+gill_spacing+ring_type,
+                family = binomial(),data = training_set)
+summary(classifiers)
+```
+
+# Prediction
+
+* let's Predict ediblity for the testing set using created model
+
+```{r}
+prob_predict=predict.glm(classifiers,newdata=testing_set[-1],type ="response")
+y_predict=ifelse(prob_predict>0.5,2,1)
+#visualize results
+cm<-table(testing_set[,1],y_predict)
+cm
+```
+
+Lets find the accuracy and misclassification of the developed model and plot the number of edible and poisonous records in the testing set
+
+```{r warning=FALSE}
+accuracy=(cm[1,1]+cm[2,2])/NROW(testing_set)
+accuracy
+misclassification=1-accuracy
+misclassification
+#plotting edible and poisonous mushrooms in testing_set
+edible=cm[2,2]
+poisonous=cm[1,1]
+library(plotrix)
+pie3D(x=c(poisonous,edible),explode = 0.25,labels = c("poisonous","edible"),main=" Ediblity in testing_set")
+```
+
+# Building Model using Decision Tree
+
+* To increase the accuracy we can try other kind of model buildings such as Decision Trees,RandomForest,Naive Bayes etc.
+* Here we can try to build a model using Decision tree.
+
+```{r warning=FALSE}
+library(rpart)
+library(rpart.plot)
+mod_fit=rpart(formula =poiede~odor+bruises+stalk_color_above_ring+
+  stalk_surface_above_ring+stalk_surface_below_ring+
+  stalk_shape+stalk_root+gill_spacing+ring_type,
+              data = training_set,method = "class")
+```
+
+Lets find the prediction and accuracy of the built model for the testing set
+
+```{r}
+pred_mod=predict(object = mod_fit,newdata =testing_set,type ="class")
+
+tab=table(testing_set$poiede,pred_mod)
+tab
+accuracy1=(tab[1,1]+tab[2,2])/NROW(testing_set)
+accuracy1
+misclassification1=1-accuracy
+misclassification1
+rpart.plot(mod_fit)
+```
+------
+# Conclusion
+
+* The models built produces accuracies of `r accuracy` and `r accuracy1` respectively.
+* Thus Decision Tree gives us more accurate result and the models are successfully built for the given Dataset Agaricus Lepiota and thus the Mushrooms are found whether edible or not.
